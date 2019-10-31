@@ -234,7 +234,7 @@ public class KafkaRecordSupplier implements RecordSupplier<Integer, Long>
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
       Deserializer keyDeserializerObject = getKafkaDeserializer(props, "key.deserializer");
       Deserializer valueDeserializerObject = getKafkaDeserializer(props, "value.deserializer");
-  
+
       return new KafkaConsumer<>(props, keyDeserializerObject, valueDeserializerObject);
     }
     finally {
