@@ -21,6 +21,7 @@ package org.apache.druid.indexing.kafka.supervisor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -69,8 +70,10 @@ import org.apache.druid.indexing.seekablestream.SeekableStreamEndSequenceNumbers
 import org.apache.druid.indexing.seekablestream.SeekableStreamIndexTaskRunner.Status;
 import org.apache.druid.indexing.seekablestream.SeekableStreamIndexTaskTuningConfig;
 import org.apache.druid.indexing.seekablestream.SeekableStreamStartSequenceNumbers;
+import org.apache.druid.indexing.seekablestream.common.RecordSupplier;
 import org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisorStateManager;
 import org.apache.druid.indexing.seekablestream.supervisor.TaskReportData;
+import org.apache.druid.indexing.seekablestream.utils.RandomIdUtils;
 import org.apache.druid.java.util.common.DateTimes;
 import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.java.util.common.StringUtils;
@@ -88,10 +91,12 @@ import org.apache.druid.segment.realtime.appenderator.DummyForInjectionAppendera
 import org.apache.druid.server.metrics.DruidMonitorSchedulerConfig;
 import org.apache.druid.server.metrics.ExceptionCapturingServiceEmitter;
 import org.apache.druid.server.metrics.NoopServiceEmitter;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.security.JaasUtils;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.zookeeper.ZKUtil;
 import org.easymock.Capture;
 import org.easymock.CaptureType;
@@ -162,6 +167,7 @@ public class KafkaSupervisorTest extends EasyMockSupport
   private ExceptionCapturingServiceEmitter serviceEmitter;
   private SupervisorStateManagerConfig supervisorConfig;
   private KafkaRecordSupplier supervisorRecordSupplier;
+  private KafkaConsumerConfigs kafkaConsumerConfigs
 
   private static String getTopic()
   {
@@ -578,6 +584,13 @@ public class KafkaSupervisorTest extends EasyMockSupport
         )
     ).anyTimes();
     EasyMock.expect(taskQueue.add(EasyMock.capture(captured))).andReturn(true);
+    final Map<String, Object> props = new HashMap<>();
+    props.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
+    props.put("auto.offset.reset", "none");
+    props.put("enable.auto.commit", "false");
+    props.put("isolation.level", "read_committed");
+    EasyMock.expect(supervisor.setupRecordSupplier()).andReturn(myRecordSupplier);
+
     replayAll();
     supervisor.start();
     supervisor.runInternal();
@@ -3341,7 +3354,6 @@ public class KafkaSupervisorTest extends EasyMockSupport
     }
     System.out.println(topic +" configs");
     System.out.println(AdminUtils.fetchAllTopicConfigs(zkUtils).get(topic));
-
   }
 
   private TestableKafkaSupervisor getTestableSupervisor(
@@ -3429,6 +3441,10 @@ public class KafkaSupervisorTest extends EasyMockSupport
     consumerProperties.put("bootstrap.servers", kafkaHost);
     consumerProperties.put("metadata.max.age.ms", 1);
     System.out.println("new: " + consumerProperties.get("metadata.max.age.ms"));
+    props.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
+    props.put("auto.offset.reset", "none");
+    props.put("enable.auto.commit", "false");
+    props.put("isolation.level", "read_committed");
     KafkaSupervisorIOConfig kafkaSupervisorIOConfig = new KafkaSupervisorIOConfig(
         topic,
         replicas,
@@ -3932,6 +3948,39 @@ public class KafkaSupervisorTest extends EasyMockSupport
     public boolean isTaskCurrent(int taskGroupId, String taskId)
     {
       return isTaskCurrentReturn;
+    }
+  }
+
+  // Testable Kafka Supervisor that allows to customize default immutable consumer config in #KafkaConsumerConfigs
+  private static class TestableKafkaSupervisorCustomizedDefaultConfig extends TestableKafkaSupervisor
+  {
+    private final KafkaSupervisorSpec spec;
+    public TestableKafkaSupervisorCustomizedDefaultConfig(
+        TaskStorage taskStorage,
+        TaskMaster taskMaster,
+        IndexerMetadataStorageCoordinator indexerMetadataStorageCoordinator,
+        KafkaIndexTaskClientFactory taskClientFactory,
+        ObjectMapper mapper,
+        KafkaSupervisorSpec spec,
+        RowIngestionMetersFactory rowIngestionMetersFactory
+    )
+    {
+      super(
+          taskStorage,
+          taskMaster,
+          indexerMetadataStorageCoordinator,
+          taskClientFactory,
+          mapper,
+          spec,
+          rowIngestionMetersFactory
+      );
+      this.spec = spec;
+    }
+
+    @Override
+    protected RecordSupplier<Integer, Long> setupRecordSupplier()
+    {
+      return new KafkaRecordSupplier(spec.getIoConfig().getConsumerProperties(), sortingMapper, spec.getIoConfig().getConsumerProperties());
     }
   }
 }

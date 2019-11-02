@@ -33,6 +33,7 @@ public class KafkaConsumerConfigs
 
   public static Map<String, Object> getConsumerProperties()
   {
+    System.out.println("Hello World");
     final Map<String, Object> props = new HashMap<>();
 //    props.put("metadata.max.age.ms", "10000");
     props.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
