@@ -167,7 +167,7 @@ public class KafkaSupervisorTest extends EasyMockSupport
   private ExceptionCapturingServiceEmitter serviceEmitter;
   private SupervisorStateManagerConfig supervisorConfig;
   private KafkaRecordSupplier supervisorRecordSupplier;
-  private KafkaConsumerConfigs kafkaConsumerConfigs
+  private KafkaConsumerConfigs kafkaConsumerConfigs;
 
   private static String getTopic()
   {
@@ -584,12 +584,6 @@ public class KafkaSupervisorTest extends EasyMockSupport
         )
     ).anyTimes();
     EasyMock.expect(taskQueue.add(EasyMock.capture(captured))).andReturn(true);
-    final Map<String, Object> props = new HashMap<>();
-    props.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
-    props.put("auto.offset.reset", "none");
-    props.put("enable.auto.commit", "false");
-    props.put("isolation.level", "read_committed");
-    EasyMock.expect(supervisor.setupRecordSupplier()).andReturn(myRecordSupplier);
 
     replayAll();
     supervisor.start();
@@ -611,7 +605,7 @@ public class KafkaSupervisorTest extends EasyMockSupport
     );
 
     addMoreEvents(9, 6);
-    Thread.sleep(100000);
+//    Thread.sleep(100000);
 //    EasyMock.reset(taskQueue, taskStorage);
 //    EasyMock.expect(taskStorage.getActiveTasksByDatasource(DATASOURCE)).andReturn(ImmutableList.of()).anyTimes();
 //    Capture<KafkaIndexTask> tmp = Capture.newInstance();
@@ -3436,15 +3430,15 @@ public class KafkaSupervisorTest extends EasyMockSupport
   )
   {
     final Map<String, Object> consumerProperties = KafkaConsumerConfigs.getConsumerProperties();
+    consumerProperties.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
+    consumerProperties.put("auto.offset.reset", "none");
+    consumerProperties.put("enable.auto.commit", "false");
+    consumerProperties.put("isolation.level", "read_committed");
     System.out.println("old: " + consumerProperties.get("metadata.max.age.ms"));
     consumerProperties.put("myCustomKey", "myCustomValue");
     consumerProperties.put("bootstrap.servers", kafkaHost);
     consumerProperties.put("metadata.max.age.ms", 1);
     System.out.println("new: " + consumerProperties.get("metadata.max.age.ms"));
-    props.put("group.id", StringUtils.format("kafka-supervisor-%s", RandomIdUtils.getRandomId()));
-    props.put("auto.offset.reset", "none");
-    props.put("enable.auto.commit", "false");
-    props.put("isolation.level", "read_committed");
     KafkaSupervisorIOConfig kafkaSupervisorIOConfig = new KafkaSupervisorIOConfig(
         topic,
         replicas,
@@ -3508,7 +3502,7 @@ public class KafkaSupervisorTest extends EasyMockSupport
         null
     );
 
-    return new TestableKafkaSupervisor(
+    return new TestableKafkaSupervisorCustomizedDefaultConfig(
         taskStorage,
         taskMaster,
         indexerMetadataStorageCoordinator,
