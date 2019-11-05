@@ -606,13 +606,13 @@ public class KafkaSupervisorTest extends EasyMockSupport
 
     addMoreEvents(9, 6);
 //    Thread.sleep(100000);
-//    EasyMock.reset(taskQueue, taskStorage);
-//    EasyMock.expect(taskStorage.getActiveTasksByDatasource(DATASOURCE)).andReturn(ImmutableList.of()).anyTimes();
-//    Capture<KafkaIndexTask> tmp = Capture.newInstance();
-//    EasyMock.expect(taskQueue.add(EasyMock.capture(tmp))).andReturn(true);
-//    EasyMock.replay(taskStorage, taskQueue);
-//    supervisor.runInternal();
-//    verifyAll();
+    EasyMock.reset(taskQueue, taskStorage);
+    EasyMock.expect(taskStorage.getActiveTasksByDatasource(DATASOURCE)).andReturn(ImmutableList.of()).anyTimes();
+    Capture<KafkaIndexTask> tmp = Capture.newInstance();
+    EasyMock.expect(taskQueue.add(EasyMock.capture(tmp))).andReturn(true);
+    EasyMock.replay(taskStorage, taskQueue);
+    supervisor.runInternal();
+    verifyAll();
 
     EasyMock.reset(taskQueue, taskStorage);
     EasyMock.expect(taskStorage.getActiveTasksByDatasource(DATASOURCE)).andReturn(ImmutableList.of()).anyTimes();
