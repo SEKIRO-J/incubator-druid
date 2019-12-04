@@ -73,16 +73,19 @@ public class CliRouter extends ServerRunnable
   @Override
   protected List<? extends Module> getModules()
   {
+    return getModules(true);
+  }
+
+  protected List<? extends Module> getModules(boolean standalone)
+  {
     return ImmutableList.of(
-        new RouterProcessingModule(),
-        new QueryableModule(),
-        new QueryRunnerFactoryModule(),
-        new JettyHttpClientModule("druid.router.http", Router.class),
-        JettyHttpClientModule.global(),
+//        new RouterProcessingModule(),
         binder -> {
-          binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/router");
-          binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8888);
-          binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(9088);
+          if(standalone) {
+            binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/router");
+            binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8888);
+            binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(9088);
+          }
 
           JsonConfigProvider.bind(binder, "druid.router", TieredBrokerConfig.class);
           JsonConfigProvider.bind(binder, "druid.router.avatica.balancer", AvaticaConnectionBalancer.class);
@@ -97,8 +100,10 @@ public class CliRouter extends ServerRunnable
                 .toProvider(TieredBrokerSelectorStrategiesProvider.class)
                 .in(LazySingleton.class);
 
-          binder.bind(QueryCountStatsProvider.class).to(AsyncQueryForwardingServlet.class).in(LazySingleton.class);
-          binder.bind(JettyServerInitializer.class).to(RouterJettyServerInitializer.class).in(LazySingleton.class);
+//          binder.bind(QueryCountStatsProvider.class).to(AsyncQueryForwardingServlet.class);
+          if(standalone) {
+            binder.bind(JettyServerInitializer.class).to(RouterJettyServerInitializer.class).in(LazySingleton.class);
+          }
 
           Jerseys.addResource(binder, RouterResource.class);
 
@@ -108,10 +113,11 @@ public class CliRouter extends ServerRunnable
 
           bindAnnouncer(
               binder,
+              Router.class,
               DiscoverySideEffectsProvider.builder(NodeType.ROUTER).build()
           );
-        },
-        new LookupSerdeModule()
+        }
+//        new LookupSerdeModule()
     );
   }
 }

@@ -50,7 +50,6 @@ public class StorageNodeModule implements Module
   }
 
   @Provides
-  @LazySingleton
   public DruidServerMetadata getMetadata(@Self DruidNode node, @Nullable NodeTypeConfig nodeType, DruidServerConfig config)
   {
     if (nodeType == null) {
@@ -69,7 +68,6 @@ public class StorageNodeModule implements Module
   }
 
   @Provides
-  @LazySingleton
   public DataNodeService getDataNodeService(
       @Nullable NodeTypeConfig nodeType,
       DruidServerConfig config

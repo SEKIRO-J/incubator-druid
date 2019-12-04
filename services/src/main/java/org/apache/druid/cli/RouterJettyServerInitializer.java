@@ -79,6 +79,7 @@ public class RouterJettyServerInitializer implements JettyServerInitializer
       ServerConfig serverConfig
   )
   {
+    System.out.println("initing RouterJettyServerInitializer");
     this.routerHttpClientConfig = routerHttpClientConfig;
     this.globalHttpClientConfig = globalHttpClientConfig;
     this.managementProxyConfig = managementProxyConfig;

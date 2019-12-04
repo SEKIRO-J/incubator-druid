@@ -52,6 +52,7 @@ public class CoordinatorResource
       DruidCoordinator coordinator
   )
   {
+    System.out.println("creating CoordinatorResource instance");
     this.coordinator = coordinator;
   }
 

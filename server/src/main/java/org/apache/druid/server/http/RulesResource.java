@@ -63,6 +63,7 @@ public class RulesResource
       AuditManager auditManager
   )
   {
+    System.out.println("RulesResource constructed");
     this.databaseRuleManager = databaseRuleManager;
     this.auditManager = auditManager;
   }
@@ -72,6 +73,7 @@ public class RulesResource
   @ResourceFilters(StateResourceFilter.class)
   public Response getRules()
   {
+    System.out.println("endpoint " + RULES_ENDPOINT+ " get hit");
     return Response.ok(databaseRuleManager.getAllRules()).build();
   }
 

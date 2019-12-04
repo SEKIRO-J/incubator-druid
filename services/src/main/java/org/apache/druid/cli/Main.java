@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 /**
+ *
  */
 public class Main
 {
@@ -47,10 +48,55 @@ public class Main
 
   @SuppressWarnings("unchecked")
   @SuppressForbidden(reason = "System#out")
-  public static void main(String[] args)
+  public static void main(String[] args) throws InterruptedException
+  {
+
+    System.out.println("starting  main.......");
+    System.out.println("args: " + Arrays.toString(args));
+    final String[] router = "server router".split(" ");
+    final String[] broker = "server broker".split(" ");
+    final String[] historical = "server historical".split(" ");
+    final String[] middleManager = "server middleManager".split(" ");
+    final String[] overlordCoordinator = "server coordinator".split(" ");
+
+//    Runnable brokerR = new ServerRunable(args);
+//    brokerR.run();
+    Thread overlordCoordinatorT = new Thread(new ServerRunable(overlordCoordinator));
+    overlordCoordinatorT.start();
+    Thread.sleep(10000);
+
+//    Thread brokerT = new Thread(new ServerRunable(broker));
+//    brokerT.start();
+//    Thread.sleep(10000);
+//
+//    Thread routerT = new Thread(new ServerRunable(router));
+//    routerT.start();
+//    Thread.sleep(10000);
+//
+//    Thread historicalT = new Thread(new ServerRunable(historical));
+//    historicalT.start();
+//    Thread.sleep(10000);
+//
+//    Thread middleManagerT = new Thread(new ServerRunable(middleManager));
+//    middleManagerT.start();
+
+  }
+}
+
+class ServerRunable implements Runnable
+{
+  final String[] args;
+
+  public ServerRunable(String[] args)
+  {
+    this.args = args;
+  }
+
+  @Override
+  public void run()
   {
     final Cli.CliBuilder<Runnable> builder = Cli.builder("druid");
-
+    System.out.println("running command: " + Arrays.toString(args));
     builder.withDescription("Druid command-line runner.")
            .withDefaultCommand(Help.class)
            .withCommands(Help.class, Version.class);
@@ -93,7 +139,7 @@ public class Main
            .withDefaultCommand(Help.class)
            .withCommands(CliPeon.class, CliInternalHadoopIndexer.class);
 
-    final Injector injector = GuiceInjectors.makeStartupInjector();
+    final Injector injector = GuiceInjectors.makeStartupInjector(this.args[1]);
     final ExtensionsConfig config = injector.getInstance(ExtensionsConfig.class);
     final Collection<CliCommandCreator> extensionCommands = Initialization.getFromExtensions(
         config,
@@ -106,7 +152,7 @@ public class Main
 
     final Cli<Runnable> cli = builder.build();
     try {
-      final Runnable command = cli.parse(args);
+      final Runnable command = cli.parse(this.args);
       if (!(command instanceof Help)) { // Hack to work around Help not liking being injected
         injector.injectMembers(command);
       }

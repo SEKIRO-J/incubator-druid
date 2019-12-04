@@ -278,6 +278,10 @@ public class CliCoordinator extends ServerRunnable
           }
         }
     );
+    modules.addAll(new CliBroker().getModules(false));
+    modules.addAll(new CliRouter().getModules(false));
+    modules.addAll(new CliHistorical().getModules(false));
+    modules.addAll(new CliMiddleManager().getModules(false));
 
     if (beOverlord) {
       modules.addAll(new CliOverlord().getModules(false));

@@ -137,6 +137,7 @@ public class CoordinatorRuleManager
   public void poll()
   {
     try {
+
       StringFullResponseHolder response = druidLeaderClient.go(
           druidLeaderClient.makeRequest(HttpMethod.GET, RulesResource.RULES_ENDPOINT)
       );

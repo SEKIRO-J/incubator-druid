@@ -338,9 +338,7 @@ public class CliOverlord extends ServerRunnable
         },
         new IndexingServiceFirehoseModule(),
         new IndexingServiceTaskLogsModule(),
-        new SupervisorModule(),
-        new LookupSerdeModule(),
-        new SamplerModule()
+        new SupervisorModule()
     );
   }
 

@@ -58,6 +58,7 @@ import org.apache.druid.timeline.PruneLastCompactionState;
 import org.apache.druid.timeline.PruneLoadSpec;
 import org.eclipse.jetty.server.Server;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -76,18 +77,25 @@ public class CliBroker extends ServerRunnable
   }
 
   @Override
-  protected List<? extends Module> getModules()
-  {
+    protected List<? extends Module> getModules()
+    {
+      return getModules(true);
+    }
+
+    protected List<? extends Module> getModules(boolean standalone)
+    {
     return ImmutableList.of(
         new DruidProcessingModule(),
         new QueryableModule(),
         new QueryRunnerFactoryModule(),
         binder -> {
-          binder.bindConstant().annotatedWith(Names.named("serviceName")).to(
-              TieredBrokerConfig.DEFAULT_BROKER_SERVICE_NAME
-          );
-          binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8082);
-          binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8282);
+          if(standalone) {
+            binder.bindConstant().annotatedWith(Names.named("serviceName")).to(
+                TieredBrokerConfig.DEFAULT_BROKER_SERVICE_NAME
+            );
+            binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8082);
+            binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8282);
+          }
           binder.bindConstant().annotatedWith(PruneLoadSpec.class).to(true);
           binder.bindConstant().annotatedWith(PruneLastCompactionState.class).to(true);
 
@@ -95,8 +103,8 @@ public class CliBroker extends ServerRunnable
           LifecycleModule.register(binder, BrokerServerView.class);
           binder.bind(TimelineServerView.class).to(BrokerServerView.class).in(LazySingleton.class);
 
-          JsonConfigProvider.bind(binder, "druid.broker.cache", CacheConfig.class);
-          binder.install(new CacheModule());
+//          JsonConfigProvider.bind(binder, "druid.broker.cache", CacheConfig.class);
+//           binder.install(new CacheModule());
 
           JsonConfigProvider.bind(binder, "druid.broker.select", TierSelectorStrategy.class);
           JsonConfigProvider.bind(binder, "druid.broker.select.tier.custom", CustomTierSelectorStrategyConfig.class);
@@ -105,12 +113,13 @@ public class CliBroker extends ServerRunnable
           JsonConfigProvider.bind(binder, "druid.broker.segment", BrokerSegmentWatcherConfig.class);
 
           binder.bind(QuerySegmentWalker.class).to(ClientQuerySegmentWalker.class).in(LazySingleton.class);
-
-          binder.bind(JettyServerInitializer.class).to(QueryJettyServerInitializer.class).in(LazySingleton.class);
+          if(standalone) {
+            binder.bind(JettyServerInitializer.class).to(QueryJettyServerInitializer.class).in(LazySingleton.class);
+          }
 
           binder.bind(BrokerQueryResource.class).in(LazySingleton.class);
           Jerseys.addResource(binder, BrokerQueryResource.class);
-          binder.bind(QueryCountStatsProvider.class).to(BrokerQueryResource.class).in(LazySingleton.class);
+//          binder.bind(QueryCountStatsProvider.class).to(BrokerQueryResource.class);
           Jerseys.addResource(binder, BrokerResource.class);
           Jerseys.addResource(binder, ClientInfoResource.class);
 

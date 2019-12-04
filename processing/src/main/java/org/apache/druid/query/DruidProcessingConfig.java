@@ -56,7 +56,7 @@ public abstract class DruidProcessingConfig extends ExecutorServiceConfig implem
 
     long directSizeBytes;
     try {
-      directSizeBytes = JvmUtils.getRuntimeInfo().getDirectMemorySizeBytes();
+      directSizeBytes = JvmUtils.getRuntimeInfo().getDirectMemorySizeBytes()/4;
       log.info(
           "Detected max direct memory size of [%,d] bytes",
           directSizeBytes

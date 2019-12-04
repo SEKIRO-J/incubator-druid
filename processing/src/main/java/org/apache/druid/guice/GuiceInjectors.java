@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ *
  */
 public class GuiceInjectors
 {
@@ -51,9 +52,32 @@ public class GuiceInjectors
     );
   }
 
+  public static Collection<Module> makeDefaultStartupModules(String serverName)
+  {
+    return ImmutableList.of(
+        new DruidGuiceExtensions(),
+        new JacksonModule(),
+        new PropertiesModule(Arrays.asList("common.runtime.properties", serverName + ".runtime.properties")),
+        new RuntimeInfoModule(),
+        new ConfigModule(),
+        new NullHandlingModule(),
+        binder -> {
+          binder.bind(DruidSecondaryModule.class);
+          JsonConfigProvider.bind(binder, "druid.extensions", ExtensionsConfig.class);
+          JsonConfigProvider.bind(binder, "druid.modules", ModulesConfig.class);
+        }
+    );
+  }
+
   public static Injector makeStartupInjector()
   {
     return Guice.createInjector(makeDefaultStartupModules());
+  }
+
+  public static Injector makeStartupInjector(String serverName)
+  {
+    System.out.println("creating injector for server: " + serverName);
+    return Guice.createInjector(makeDefaultStartupModules(serverName));
   }
 
   public static Injector makeStartupInjectorWithModules(Iterable<? extends Module> modules)

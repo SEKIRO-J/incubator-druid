@@ -75,7 +75,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 @LazySingleton
-@Path("/druid/v2/")
+@Path("/druid/v2/historical")
 public class QueryResource implements QueryCountStatsProvider
 {
   protected static final EmittingLogger log = new EmittingLogger(QueryResource.class);

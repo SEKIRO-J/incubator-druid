@@ -137,6 +137,7 @@ public class DruidLeaderClient
    */
   public Request makeRequest(HttpMethod httpMethod, String urlPath) throws IOException
   {
+    System.out.println("making http request... , url: "+ urlPath);
     return makeRequest(httpMethod, urlPath, true);
   }
 

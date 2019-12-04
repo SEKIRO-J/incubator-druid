@@ -40,6 +40,7 @@ import org.apache.druid.guice.QueryableModule;
 import org.apache.druid.java.util.common.logger.Logger;
 import org.apache.druid.query.QuerySegmentWalker;
 import org.apache.druid.query.lookup.LookupModule;
+import org.apache.druid.segment.loading.Historical;
 import org.apache.druid.server.QueryResource;
 import org.apache.druid.server.SegmentManager;
 import org.apache.druid.server.coordination.ServerManager;
@@ -72,43 +73,53 @@ public class CliHistorical extends ServerRunnable
   @Override
   protected List<? extends Module> getModules()
   {
+    return getModules(true);
+  }
+
+  protected List<? extends Module> getModules(final boolean standalone)
+  {
     return ImmutableList.of(
-        new DruidProcessingModule(),
-        new QueryableModule(),
-        new QueryRunnerFactoryModule(),
+//        new DruidProcessingModule(),
+//        new QueryableModule(),
+//        new QueryRunnerFactoryModule(),
         binder -> {
-          binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/historical");
-          binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8083);
-          binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8283);
-          binder.bindConstant().annotatedWith(PruneLastCompactionState.class).to(true);
+          if(standalone) {
+            binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/historical");
+            binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8083);
+            binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8283);
+          }
+//          binder.bindConstant().annotatedWith(PruneLastCompactionState.class).to(true);
 
           // register Server before binding ZkCoordinator to ensure HTTP endpoints are available immediately
           LifecycleModule.register(binder, Server.class);
           binder.bind(ServerManager.class).in(LazySingleton.class);
           binder.bind(SegmentManager.class).in(LazySingleton.class);
           binder.bind(ZkCoordinator.class).in(ManageLifecycle.class);
-          binder.bind(QuerySegmentWalker.class).to(ServerManager.class).in(LazySingleton.class);
+//          binder.bind(QuerySegmentWalker.class).to(ServerManager.class).in(LazySingleton.class);
 
           binder.bind(NodeTypeConfig.class).toInstance(new NodeTypeConfig(ServerType.HISTORICAL));
-          binder.bind(JettyServerInitializer.class).to(QueryJettyServerInitializer.class).in(LazySingleton.class);
-          binder.bind(QueryCountStatsProvider.class).to(QueryResource.class);
+          if(standalone) {
+            binder.bind(JettyServerInitializer.class).to(QueryJettyServerInitializer.class).in(LazySingleton.class);
+          }
+//          binder.bind(QueryCountStatsProvider.class).to(QueryResource.class).in(LazySingleton.class);
           Jerseys.addResource(binder, QueryResource.class);
           Jerseys.addResource(binder, HistoricalResource.class);
           Jerseys.addResource(binder, SegmentListerResource.class);
           LifecycleModule.register(binder, QueryResource.class);
           LifecycleModule.register(binder, ZkCoordinator.class);
 
-          JsonConfigProvider.bind(binder, "druid.historical.cache", CacheConfig.class);
+         JsonConfigProvider.bind(binder, "druid.historical.cache", CacheConfig.class);
           binder.install(new CacheModule());
 
           bindAnnouncer(
               binder,
+              Historical.class,
               DiscoverySideEffectsProvider.builder(NodeType.HISTORICAL)
                                           .serviceClasses(ImmutableList.of(DataNodeService.class, LookupNodeService.class))
                                           .build()
           );
-        },
-        new LookupModule()
+        }
+//        new LookupModule()
     );
   }
 }

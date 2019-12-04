@@ -59,6 +59,7 @@ import org.apache.druid.indexing.worker.http.TaskManagementResource;
 import org.apache.druid.indexing.worker.http.WorkerResource;
 import org.apache.druid.java.util.common.logger.Logger;
 import org.apache.druid.query.lookup.LookupSerdeModule;
+import org.apache.druid.segment.loading.MiddleManager;
 import org.apache.druid.segment.realtime.appenderator.AppenderatorsManager;
 import org.apache.druid.segment.realtime.appenderator.DummyForInjectionAppenderatorsManager;
 import org.apache.druid.segment.realtime.firehose.ChatHandlerProvider;
@@ -88,15 +89,22 @@ public class CliMiddleManager extends ServerRunnable
   @Override
   protected List<? extends Module> getModules()
   {
+    return getModules(true);
+  }
+
+  protected List<? extends Module> getModules(final boolean standalone)
+  {
     return ImmutableList.of(
         new Module()
         {
           @Override
           public void configure(Binder binder)
           {
-            binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/middlemanager");
-            binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8091);
-            binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8291);
+            if(standalone) {
+              binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/middlemanager");
+              binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8091);
+              binder.bindConstant().annotatedWith(Names.named("tlsServicePort")).to(8291);
+            }
             binder.bindConstant().annotatedWith(PruneLastCompactionState.class).to(true);
 
             IndexingServiceModuleHelper.configureTaskRunnerConfigs(binder);
@@ -127,9 +135,11 @@ public class CliMiddleManager extends ServerRunnable
 
             bindWorkerManagementClasses(binder);
 
-            binder.bind(JettyServerInitializer.class)
-                  .to(MiddleManagerJettyServerInitializer.class)
-                  .in(LazySingleton.class);
+            if(standalone) {
+              binder.bind(JettyServerInitializer.class)
+                    .to(MiddleManagerJettyServerInitializer.class)
+                    .in(LazySingleton.class);
+            }
 
             binder.bind(AppenderatorsManager.class)
                   .to(DummyForInjectionAppenderatorsManager.class)
@@ -141,6 +151,7 @@ public class CliMiddleManager extends ServerRunnable
 
             bindAnnouncer(
                 binder,
+                MiddleManager.class,
                 DiscoverySideEffectsProvider.builder(NodeType.MIDDLE_MANAGER)
                                             .serviceClasses(ImmutableList.of(WorkerNodeService.class))
                                             .build()

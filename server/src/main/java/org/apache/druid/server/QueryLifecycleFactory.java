@@ -29,7 +29,6 @@ import org.apache.druid.server.log.RequestLogger;
 import org.apache.druid.server.security.AuthConfig;
 import org.apache.druid.server.security.AuthorizerMapper;
 
-@LazySingleton
 public class QueryLifecycleFactory
 {
   private final QueryToolChestWarehouse warehouse;
