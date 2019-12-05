@@ -45,12 +45,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * SeparateValueReader abstracts the reader for (Comma/Tab) Separate Value format input data.
- * It implements the common logic between {@link CsvReader} and {@link TsvReader}
- * Should never be instantiated
- */
-public abstract class SeparateValueReader extends TextReader
+
+public class SeparateValueReader extends TextReader
 {
   private final boolean findColumnsFromHeader;
   private final int skipHeaderRows;
